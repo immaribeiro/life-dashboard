@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Life Dashboard{% endblock %}
+
+{% block content %}
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-gray-100">Settings</h1>
+        <p class="text-gray-400 mt-2">Configure your dashboard</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- API Configuration -->
+        <div class="bg-gray-800 rounded-xl shadow-lg p-6">
+            <h2 class="text-2xl font-bold text-gray-100 mb-4">🔑 API Configuration</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-300 mb-2">API Key</label>
+                    <div class="flex space-x-2">
+                        <input 
+                            id="api-key-input"
+                            type="password" 
+                            value="••••••••••••••••" 
+                            readonly
+                            class="flex-1 bg-gray-700 text-gray-100 rounded-lg px-4 py-2 border border-gray-600"
+                        />
+                        <button 
+                            onclick="toggleApiKeyVisibility()"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 transition">
+                            <span id="toggle-btn">Show</span>
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2">Keep this key private. Use it to authenticate API requests.</p>
+                </div>
+                
+                <div>
+                    <button 
+                        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 transition font-semibold">
+                        Regenerate API Key
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- About -->
+        <div class="bg-gray-800 rounded-xl shadow-lg p-6">
+            <h2 class="text-2xl font-bold text-gray-100 mb-4">ℹ️ About</h2>
+            
+            <div class="space-y-4 text-gray-300">
+                <p>
+                    <strong>Life Dashboard</strong> is a personal life tracking application designed to help you stay organized and mindful.
+                </p>
+                
+                <p>
+                    Track your reminders, mental notes, food intake, and training sessions. Get a daily summary of your life, including highlights, challenges, and reflections.
+                </p>
+                
+                <div class="bg-gray-700 rounded-lg p-4 mt-4">
+                    <p class="text-sm">
+                        <strong>Version:</strong> 1.0.0<br>
+                        <strong>Created by:</strong> Smith 🕶️<br>
+                        <strong>Last updated:</strong> 2026
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleApiKeyVisibility() {
+            const input = document.getElementById('api-key-input');
+            const btn = document.getElementById('toggle-btn');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                btn.textContent = 'Hide';
+                // In a real app, you'd fetch the actual API key from the backend
+                input.value = 'sk_live_REDACTED_PLACEHOLDER';
+            } else {
+                input.type = 'password';
+                btn.textContent = 'Show';
+                input.value = '••••••••••••••••';
+            }
+        }
+    </script>
+{% endblock %}
