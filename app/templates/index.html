@@ -10,13 +10,16 @@
 <div class="card mb-6">
   <div class="flex items-center justify-between mb-4">
     <h2 class="text-cyan-400 font-semibold">📅 Schedule</h2>
-    <div class="flex gap-1">
+    <div class="flex gap-1" id="calendar-btns">
       <button hx-get="/partials/calendar-day?offset=0" hx-target="#calendar-list" 
-              class="px-3 py-1 text-xs rounded bg-cyan-600 text-white hover:bg-cyan-500" id="btn-today">Today</button>
+              onclick="selectCalBtn(this)"
+              class="cal-btn px-3 py-1 text-xs rounded bg-cyan-600 text-white">Today</button>
       <button hx-get="/partials/calendar-day?offset=1" hx-target="#calendar-list"
-              class="px-3 py-1 text-xs rounded bg-slate-700 text-slate-300 hover:bg-slate-600" id="btn-tomorrow">Tomorrow</button>
+              onclick="selectCalBtn(this)"
+              class="cal-btn px-3 py-1 text-xs rounded bg-slate-700 text-slate-300 hover:bg-slate-600">Tomorrow</button>
       <button hx-get="/partials/calendar-day?offset=2" hx-target="#calendar-list"
-              class="px-3 py-1 text-xs rounded bg-slate-700 text-slate-300 hover:bg-slate-600" id="btn-day-after">+2 Days</button>
+              onclick="selectCalBtn(this)"
+              class="cal-btn px-3 py-1 text-xs rounded bg-slate-700 text-slate-300 hover:bg-slate-600">+2 Days</button>
     </div>
   </div>
   <div id="calendar-list" hx-get="/partials/calendar-day?offset=0" hx-trigger="load" hx-swap="innerHTML">
@@ -79,5 +82,14 @@
 </div>
 <script>
   document.getElementById('today-date').textContent = new Date().toLocaleDateString('en-GB', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  
+  function selectCalBtn(btn) {
+    document.querySelectorAll('.cal-btn').forEach(b => {
+      b.classList.remove('bg-cyan-600', 'text-white');
+      b.classList.add('bg-slate-700', 'text-slate-300', 'hover:bg-slate-600');
+    });
+    btn.classList.remove('bg-slate-700', 'text-slate-300', 'hover:bg-slate-600');
+    btn.classList.add('bg-cyan-600', 'text-white');
+  }
 </script>
 {% endblock %}
