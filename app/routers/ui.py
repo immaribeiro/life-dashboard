@@ -5,7 +5,7 @@ from sqlmodel import Session, select
 from typing import Optional
 from datetime import datetime, date, time
 from app.database import get_session
-from app.models import FoodLog, TrainingLog, MentalLog, Reminder, ReminderStatus
+from app.models import FoodLog, TrainingLog, MentalLog, Reminder, ReminderStatus, WeightLog
 
 router = APIRouter(tags=["ui"])
 templates = Jinja2Templates(directory="app/templates")
@@ -27,6 +27,10 @@ async def reminders_page(request: Request):
 @router.get("/settings")
 async def settings(request: Request):
     return templates.TemplateResponse("settings.html", {"request": request})
+
+@router.get("/analytics")
+async def analytics(request: Request):
+    return templates.TemplateResponse("analytics.html", {"request": request})
 
 # --- HTMX partial routes ---
 
@@ -141,3 +145,60 @@ async def partial_history(session: Session = Depends(get_session)):
         rows = "".join(f'<li class="text-sm text-slate-300 py-1">{i.logged_at.strftime("%d/%m %H:%M")} — {i.activity}{" (" + str(i.duration_minutes) + "min)" if i.duration_minutes else ""}</li>' for i in training)
         parts.append(f'<h3 class="text-blue-400 font-semibold mb-2 mt-4">💪 Training</h3><ul>{rows}</ul>')
     return "".join(parts) if parts else '<p class="text-slate-500 text-sm">No history yet.</p>'
+
+@router.get("/partials/stats-cards", response_class=HTMLResponse)
+async def partial_stats_cards(session: Session = Depends(get_session)):
+    from datetime import timedelta
+    from sqlmodel import func
+    
+    today = date.today()
+    week_start = today - timedelta(days=today.weekday())
+    month_start = today.replace(day=1)
+    week_start_dt = datetime.combine(week_start, time.min)
+    month_start_dt = datetime.combine(month_start, time.min)
+    
+    trainings_week = session.exec(select(func.count(TrainingLog.id)).where(TrainingLog.logged_at >= week_start_dt)).one()
+    trainings_month = session.exec(select(func.count(TrainingLog.id)).where(TrainingLog.logged_at >= month_start_dt)).one()
+    
+    latest_weight = session.exec(select(WeightLog).order_by(WeightLog.logged_at.desc())).first()
+    weight_30d_ago = session.exec(select(WeightLog).where(WeightLog.logged_at <= today - timedelta(days=30)).order_by(WeightLog.logged_at.desc())).first()
+    
+    weight_change = ""
+    if latest_weight and weight_30d_ago:
+        diff = latest_weight.weight_kg - weight_30d_ago.weight_kg
+        sign = "+" if diff > 0 else ""
+        weight_change = f'<span class="text-xs {"text-red-400" if diff > 0 else "text-green-400"}">{sign}{diff:.1f} kg</span>'
+    
+    return f'''
+    <div class="bg-slate-800 rounded-lg p-4 text-center">
+        <div class="text-3xl font-bold text-blue-400">{trainings_week}</div>
+        <div class="text-slate-400 text-sm">Trainings this week</div>
+    </div>
+    <div class="bg-slate-800 rounded-lg p-4 text-center">
+        <div class="text-3xl font-bold text-green-400">{trainings_month}</div>
+        <div class="text-slate-400 text-sm">Trainings this month</div>
+    </div>
+    <div class="bg-slate-800 rounded-lg p-4 text-center">
+        <div class="text-3xl font-bold text-purple-400">{latest_weight.weight_kg if latest_weight else "—"}</div>
+        <div class="text-slate-400 text-sm">Latest weight (kg) {weight_change}</div>
+    </div>
+    <div class="bg-slate-800 rounded-lg p-4 text-center">
+        <div class="text-3xl font-bold text-amber-400">{today.strftime("%d %b")}</div>
+        <div class="text-slate-400 text-sm">Today</div>
+    </div>
+    '''
+
+@router.post("/partials/weight", response_class=HTMLResponse)
+async def partial_weight_add(weight_kg: float = Form(...), notes: Optional[str] = Form(default=None), session: Session = Depends(get_session)):
+    today = date.today()
+    existing = session.exec(select(WeightLog).where(WeightLog.logged_at == today)).first()
+    if existing:
+        existing.weight_kg = weight_kg
+        existing.notes = notes
+        session.commit()
+    else:
+        entry = WeightLog(weight_kg=weight_kg, logged_at=today, notes=notes)
+        session.add(entry)
+        session.commit()
+    # Return updated stats cards
+    return await partial_stats_cards(session)

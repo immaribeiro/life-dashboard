@@ -48,3 +48,9 @@ class DailySummary(SQLModel, table=True):
     gratitude: Optional[str] = None
     tomorrow_focus: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class WeightLog(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    weight_kg: float
+    logged_at: date = Field(default_factory=date.today)
+    notes: Optional[str] = None

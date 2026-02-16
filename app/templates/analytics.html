@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Analytics — Life Dashboard{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-2xl font-bold text-slate-100 mb-6">📊 Analytics</h1>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="stats-cards" hx-get="/partials/stats-cards" hx-trigger="load" hx-swap="innerHTML">
+        <div class="bg-slate-800 rounded-lg p-4 animate-pulse"><div class="h-16"></div></div>
+        <div class="bg-slate-800 rounded-lg p-4 animate-pulse"><div class="h-16"></div></div>
+        <div class="bg-slate-800 rounded-lg p-4 animate-pulse"><div class="h-16"></div></div>
+        <div class="bg-slate-800 rounded-lg p-4 animate-pulse"><div class="h-16"></div></div>
+    </div>
+    
+    <!-- Weight Chart -->
+    <div class="bg-slate-800 rounded-lg p-6 mb-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold text-slate-100">⚖️ Weight Progress</h2>
+            <button onclick="document.getElementById('weight-modal').classList.remove('hidden')" 
+                    class="bg-blue-600 hover:bg-blue-500 text-white text-sm px-3 py-1 rounded">
+                + Log Weight
+            </button>
+        </div>
+        <div class="h-64">
+            <canvas id="weightChart"></canvas>
+        </div>
+    </div>
+    
+    <!-- Training Chart -->
+    <div class="bg-slate-800 rounded-lg p-6 mb-6">
+        <h2 class="text-lg font-semibold text-slate-100 mb-4">💪 Training Frequency</h2>
+        <div class="h-64">
+            <canvas id="trainingChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Weight Log Modal -->
+<div id="weight-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-slate-800 rounded-lg p-6 w-full max-w-md mx-4">
+        <h3 class="text-lg font-semibold text-slate-100 mb-4">Log Weight</h3>
+        <form hx-post="/partials/weight" hx-target="#stats-cards" hx-swap="innerHTML" 
+              hx-on::after-request="document.getElementById('weight-modal').classList.add('hidden'); loadCharts();">
+            <div class="mb-4">
+                <label class="block text-slate-400 text-sm mb-1">Weight (kg)</label>
+                <input type="number" step="0.1" name="weight_kg" required
+                       class="w-full bg-slate-700 text-slate-100 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="mb-4">
+                <label class="block text-slate-400 text-sm mb-1">Notes (optional)</label>
+                <input type="text" name="notes" 
+                       class="w-full bg-slate-700 text-slate-100 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded">Save</button>
+                <button type="button" onclick="document.getElementById('weight-modal').classList.add('hidden')" 
+                        class="flex-1 bg-slate-600 hover:bg-slate-500 text-white py-2 rounded">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let weightChart, trainingChart;
+
+async function loadCharts() {
+    const res = await fetch('/api/stats');
+    const data = await res.json();
+    
+    // Weight Chart
+    const weightCtx = document.getElementById('weightChart').getContext('2d');
+    if (weightChart) weightChart.destroy();
+    
+    const weightLabels = data.weight.entries.map(e => e.date.slice(5)); // MM-DD
+    const weightData = data.weight.entries.map(e => e.weight);
+    
+    weightChart = new Chart(weightCtx, {
+        type: 'line',
+        data: {
+            labels: weightLabels,
+            datasets: [{
+                label: 'Weight (kg)',
+                data: weightData,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { 
+                    grid: { color: '#334155' },
+                    ticks: { color: '#94a3b8' }
+                },
+                x: { 
+                    grid: { color: '#334155' },
+                    ticks: { color: '#94a3b8' }
+                }
+            }
+        }
+    });
+    
+    // Training Chart
+    const trainingCtx = document.getElementById('trainingChart').getContext('2d');
+    if (trainingChart) trainingChart.destroy();
+    
+    const weekLabels = Object.keys(data.training.weekly_breakdown).map(w => `Week ${w}`);
+    const trainingData = Object.values(data.training.weekly_breakdown);
+    
+    trainingChart = new Chart(trainingCtx, {
+        type: 'bar',
+        data: {
+            labels: weekLabels.length ? weekLabels : ['This week'],
+            datasets: [{
+                label: 'Trainings',
+                data: trainingData.length ? trainingData : [data.training.this_week],
+                backgroundColor: '#10b981',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { 
+                    beginAtZero: true,
+                    grid: { color: '#334155' },
+                    ticks: { color: '#94a3b8', stepSize: 1 }
+                },
+                x: { 
+                    grid: { display: false },
+                    ticks: { color: '#94a3b8' }
+                }
+            }
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', loadCharts);
+</script>
+{% endblock %}
