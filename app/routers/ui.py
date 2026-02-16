@@ -3,7 +3,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from sqlmodel import Session, select
 from typing import Optional
-from datetime import datetime, date
+from datetime import datetime, date, time
 from app.database import get_session
 from app.models import FoodLog, TrainingLog, MentalLog, Reminder, ReminderStatus
 
@@ -62,8 +62,8 @@ def _render_reminders(items):
 
 @router.get("/partials/food", response_class=HTMLResponse)
 async def partial_food(session: Session = Depends(get_session)):
-    today = date.today()
-    items = session.exec(select(FoodLog).where(FoodLog.logged_at >= f"{today}T00:00:00")).all()
+    today_start = datetime.combine(date.today(), time.min)
+    items = session.exec(select(FoodLog).where(FoodLog.logged_at >= today_start)).all()
     return _render_food(items)
 
 @router.post("/partials/food", response_class=HTMLResponse)
@@ -71,14 +71,14 @@ async def partial_food_add(description: str = Form(...), meal_type: str = Form(d
     entry = FoodLog(description=description, meal_type=meal_type or None)
     session.add(entry)
     session.commit()
-    today = date.today()
-    items = session.exec(select(FoodLog).where(FoodLog.logged_at >= f"{today}T00:00:00")).all()
+    today_start = datetime.combine(date.today(), time.min)
+    items = session.exec(select(FoodLog).where(FoodLog.logged_at >= today_start)).all()
     return _render_food(items)
 
 @router.get("/partials/training", response_class=HTMLResponse)
 async def partial_training(session: Session = Depends(get_session)):
-    today = date.today()
-    items = session.exec(select(TrainingLog).where(TrainingLog.logged_at >= f"{today}T00:00:00")).all()
+    today_start = datetime.combine(date.today(), time.min)
+    items = session.exec(select(TrainingLog).where(TrainingLog.logged_at >= today_start)).all()
     return _render_training(items)
 
 @router.post("/partials/training", response_class=HTMLResponse)
@@ -86,14 +86,14 @@ async def partial_training_add(activity: str = Form(...), duration_minutes: Opti
     entry = TrainingLog(activity=activity, duration_minutes=duration_minutes)
     session.add(entry)
     session.commit()
-    today = date.today()
-    items = session.exec(select(TrainingLog).where(TrainingLog.logged_at >= f"{today}T00:00:00")).all()
+    today_start = datetime.combine(date.today(), time.min)
+    items = session.exec(select(TrainingLog).where(TrainingLog.logged_at >= today_start)).all()
     return _render_training(items)
 
 @router.get("/partials/mental", response_class=HTMLResponse)
 async def partial_mental(session: Session = Depends(get_session)):
-    today = date.today()
-    items = session.exec(select(MentalLog).where(MentalLog.logged_at >= f"{today}T00:00:00")).all()
+    today_start = datetime.combine(date.today(), time.min)
+    items = session.exec(select(MentalLog).where(MentalLog.logged_at >= today_start)).all()
     return _render_mental(items)
 
 @router.post("/partials/mental", response_class=HTMLResponse)
@@ -101,8 +101,8 @@ async def partial_mental_add(content: str = Form(...), session: Session = Depend
     entry = MentalLog(content=content)
     session.add(entry)
     session.commit()
-    today = date.today()
-    items = session.exec(select(MentalLog).where(MentalLog.logged_at >= f"{today}T00:00:00")).all()
+    today_start = datetime.combine(date.today(), time.min)
+    items = session.exec(select(MentalLog).where(MentalLog.logged_at >= today_start)).all()
     return _render_mental(items)
 
 @router.get("/partials/reminders", response_class=HTMLResponse)
