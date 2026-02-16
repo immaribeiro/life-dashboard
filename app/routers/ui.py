@@ -146,6 +146,70 @@ async def partial_history(session: Session = Depends(get_session)):
         parts.append(f'<h3 class="text-blue-400 font-semibold mb-2 mt-4">💪 Training</h3><ul>{rows}</ul>')
     return "".join(parts) if parts else '<p class="text-slate-500 text-sm">No history yet.</p>'
 
+@router.get("/partials/calendar-today", response_class=HTMLResponse)
+async def partial_calendar_today():
+    """Get today's calendar events"""
+    try:
+        from app.routers.calendar import get_credentials
+        from googleapiclient.discovery import build
+        from datetime import timedelta
+        
+        creds = get_credentials()
+        if not creds:
+            return '<p class="text-slate-500 text-sm">Calendar not connected. <a href="/api/calendar/auth" class="text-cyan-400 hover:underline">Connect Google Calendar</a></p>'
+        
+        service = build('calendar', 'v3', credentials=creds)
+        today = date.today()
+        tomorrow = today + timedelta(days=1)
+        
+        # Get today's events
+        today_start = datetime.combine(today, time.min).isoformat() + 'Z'
+        today_end = datetime.combine(tomorrow, time.min).isoformat() + 'Z'
+        
+        events_result = service.events().list(
+            calendarId='primary',
+            timeMin=today_start,
+            timeMax=today_end,
+            maxResults=20,
+            singleEvents=True,
+            orderBy='startTime'
+        ).execute()
+        
+        events = events_result.get('items', [])
+        
+        if not events:
+            return '<p class="text-slate-500 text-sm">No events scheduled for today ✨</p>'
+        
+        rows = []
+        for e in events:
+            start = e.get('start', {})
+            start_time = start.get('dateTime', start.get('date', ''))
+            
+            # Format time
+            if 'T' in start_time:
+                dt = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
+                time_str = dt.strftime('%H:%M')
+            else:
+                time_str = 'All day'
+            
+            summary = e.get('summary', '(No title)')
+            location = e.get('location', '')
+            
+            loc_html = f'<span class="text-slate-500 text-xs ml-2">📍 {location[:30]}</span>' if location else ''
+            
+            rows.append(f'''
+                <li class="flex items-center gap-3 py-2 border-b border-slate-700">
+                    <span class="text-cyan-400 font-mono text-sm w-14">{time_str}</span>
+                    <span class="text-slate-200 text-sm flex-1">{summary}</span>
+                    {loc_html}
+                </li>
+            ''')
+        
+        return f'<ul class="divide-y divide-slate-700">{"".join(rows)}</ul>'
+        
+    except Exception as ex:
+        return f'<p class="text-red-400 text-sm">Error loading calendar: {str(ex)[:100]}</p>'
+
 @router.get("/partials/stats-cards", response_class=HTMLResponse)
 async def partial_stats_cards(session: Session = Depends(get_session)):
     from datetime import timedelta

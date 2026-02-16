@@ -5,6 +5,15 @@
   <h1 class="text-2xl font-bold text-white" id="today-date"></h1>
   <p class="text-slate-400 text-sm mt-1">Your daily overview</p>
 </div>
+
+<!-- Today's Schedule -->
+<div class="card mb-6">
+  <h2 class="text-cyan-400 font-semibold mb-4">📅 Today's Schedule</h2>
+  <div id="calendar-list" hx-get="/partials/calendar-today" hx-trigger="load" hx-swap="innerHTML">
+    <p class="text-slate-500 text-sm">Loading calendar...</p>
+  </div>
+</div>
+
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
   <!-- Food -->
