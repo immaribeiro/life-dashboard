@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Subscriptions — Life Dashboard{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold text-white">💳 Subscriptions</h1>
+  <p class="text-slate-400 text-sm mt-1">Track your recurring payments</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  
+  <!-- Main subscriptions list -->
+  <div class="lg:col-span-2 card">
+    <div id="subscriptions-list" hx-get="/partials/subscriptions-list" hx-trigger="load" hx-swap="innerHTML">
+      <p class="text-slate-500 text-sm">Loading subscriptions...</p>
+    </div>
+    
+    <!-- Add new subscription form -->
+    <div class="mt-6 pt-6 border-t border-slate-700">
+      <h3 class="text-slate-300 font-medium mb-3">Add Subscription</h3>
+      <form hx-post="/api/subscriptions" hx-target="#subscriptions-list" hx-swap="innerHTML"
+            hx-on::after-request="this.reset(); htmx.ajax('GET', '/partials/subscriptions-list', '#subscriptions-list')">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+          <input name="name" placeholder="Service name" required
+                 class="col-span-2 bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500">
+          <input name="full_price" type="number" step="0.01" placeholder="Price €" required
+                 class="bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500">
+          <select name="billing_cycle"
+                  class="bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+            <option value="weekly">Weekly</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+          <select name="category"
+                  class="bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+            <option value="entertainment">🎬 Entertainment</option>
+            <option value="productivity">⚡ Productivity</option>
+            <option value="health">❤️ Health</option>
+            <option value="ai">🤖 AI</option>
+            <option value="cloud">☁️ Cloud</option>
+            <option value="education">📚 Education</option>
+            <option value="finance">💰 Finance</option>
+            <option value="other">📦 Other</option>
+          </select>
+          <input name="my_price" type="number" step="0.01" placeholder="My share €"
+                 class="bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500">
+          <input name="shared_with" placeholder="Shared with..."
+                 class="bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500">
+          <button type="submit" class="bg-cyan-600 hover:bg-cyan-500 text-white text-sm px-4 py-2 rounded font-medium">
+            Add
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Suggestions sidebar -->
+  <div class="card">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-amber-400 font-semibold">🕶️ Smith's Suggestions</h2>
+      <button hx-get="/partials/suggestions-box?category=subscriptions" hx-target="#suggestions-box" hx-swap="innerHTML"
+              class="text-slate-400 hover:text-slate-300 text-xs">↻ Refresh</button>
+    </div>
+    <div id="suggestions-box" hx-get="/partials/suggestions-box?category=subscriptions" hx-trigger="load" hx-swap="innerHTML">
+      <p class="text-slate-500 text-sm">Loading suggestions...</p>
+    </div>
+    
+    <div class="mt-6 pt-4 border-t border-slate-700">
+      <p class="text-slate-500 text-xs">
+        💡 Tip: Ask Smith to analyze your subscriptions!<br>
+        <code class="text-cyan-400">"Analyze my subscriptions and suggest savings"</code>
+      </p>
+    </div>
+  </div>
+  
+</div>
+
+<!-- Stats by category -->
+<div class="mt-6 card">
+  <h2 class="text-cyan-400 font-semibold mb-4">📊 By Category</h2>
+  <div id="category-stats" hx-get="/api/subscriptions/stats/summary" hx-trigger="load" hx-swap="innerHTML">
+    <p class="text-slate-500 text-sm">Loading stats...</p>
+  </div>
+</div>
+
+<script>
+  // Handle stats response (it's JSON, need to render it)
+  document.body.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.detail.target.id === 'category-stats') {
+      try {
+        const data = JSON.parse(evt.detail.target.innerText);
+        const cats = data.by_category || {};
+        let html = '<div class="grid grid-cols-2 md:grid-cols-4 gap-4">';
+        const icons = {entertainment:'🎬',productivity:'⚡',health:'❤️',ai:'🤖',cloud:'☁️',education:'📚',finance:'💰',other:'📦'};
+        for (const [cat, info] of Object.entries(cats)) {
+          html += `<div class="bg-slate-800 rounded-lg p-4 text-center">
+            <div class="text-2xl mb-1">${icons[cat] || '📦'}</div>
+            <div class="text-lg font-bold text-cyan-400">€${info.monthly.toFixed(2)}/mo</div>
+            <div class="text-slate-400 text-xs">${info.count} subscription${info.count !== 1 ? 's' : ''}</div>
+          </div>`;
+        }
+        html += '</div>';
+        if (Object.keys(cats).length === 0) {
+          html = '<p class="text-slate-500 text-sm">No active subscriptions to show stats.</p>';
+        }
+        evt.detail.target.innerHTML = html;
+      } catch(e) {
+        // Not JSON, leave as is
+      }
+    }
+  });
+</script>
+{% endblock %}

@@ -5,7 +5,7 @@ from sqlmodel import Session, select
 from typing import Optional
 from datetime import datetime, date, time
 from app.database import get_session
-from app.models import FoodLog, TrainingLog, MentalLog, Reminder, ReminderStatus, WeightLog
+from app.models import FoodLog, TrainingLog, MentalLog, Reminder, ReminderStatus, WeightLog, Subscription, BillingCycle, Suggestion
 
 router = APIRouter(tags=["ui"])
 templates = Jinja2Templates(directory="app/templates")
@@ -31,6 +31,10 @@ async def settings(request: Request):
 @router.get("/analytics")
 async def analytics(request: Request):
     return templates.TemplateResponse("analytics.html", {"request": request})
+
+@router.get("/subscriptions")
+async def subscriptions_page(request: Request):
+    return templates.TemplateResponse("subscriptions.html", {"request": request})
 
 # --- HTMX partial routes ---
 
@@ -281,3 +285,101 @@ async def partial_weight_add(weight_kg: float = Form(...), notes: Optional[str] 
         session.commit()
     # Return updated stats cards
     return await partial_stats_cards(session)
+
+# --- Subscriptions partials ---
+
+@router.get("/partials/subscriptions-list", response_class=HTMLResponse)
+async def partial_subscriptions_list(session: Session = Depends(get_session)):
+    subs = session.exec(
+        select(Subscription).where(Subscription.active == True).order_by(Subscription.category, Subscription.name)
+    ).all()
+    
+    if not subs:
+        return '<p class="text-slate-500 text-sm">No subscriptions yet. Add your first one!</p>'
+    
+    # Calculate totals
+    monthly_total = 0.0
+    for sub in subs:
+        price = sub.my_price if sub.my_price is not None else sub.full_price
+        if sub.billing_cycle == BillingCycle.MONTHLY:
+            monthly_total += price
+        elif sub.billing_cycle == BillingCycle.YEARLY:
+            monthly_total += price / 12
+        elif sub.billing_cycle == BillingCycle.WEEKLY:
+            monthly_total += price * 4.33
+    
+    rows = []
+    for sub in subs:
+        price = sub.my_price if sub.my_price is not None else sub.full_price
+        shared_badge = f'<span class="text-xs bg-blue-900 text-blue-300 px-1.5 py-0.5 rounded ml-2">shared</span>' if sub.is_shared else ''
+        shared_with = f'<span class="text-slate-500 text-xs ml-1">w/ {sub.shared_with}</span>' if sub.shared_with else ''
+        cycle_text = sub.billing_cycle.value[:3] if sub.billing_cycle else 'mo'
+        
+        rows.append(f'''
+            <tr class="border-b border-slate-700 hover:bg-slate-800">
+                <td class="py-3 px-2">
+                    <span class="text-slate-200">{sub.name}</span>
+                    {shared_badge}{shared_with}
+                </td>
+                <td class="py-3 px-2 text-right">
+                    <span class="text-cyan-400 font-mono">€{price:.2f}</span>
+                    <span class="text-slate-500 text-xs">/{cycle_text}</span>
+                </td>
+                <td class="py-3 px-2 text-center">
+                    <span class="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded">{sub.category.value if sub.category else 'other'}</span>
+                </td>
+                <td class="py-3 px-2 text-right">
+                    <button hx-delete="/api/subscriptions/{sub.id}" hx-target="#subscriptions-list" hx-swap="innerHTML"
+                            hx-confirm="Cancel {sub.name}?" 
+                            class="text-red-400 hover:text-red-300 text-sm">✕</button>
+                </td>
+            </tr>
+        ''')
+    
+    return f'''
+        <div class="mb-4 text-right">
+            <span class="text-slate-400">Monthly total:</span>
+            <span class="text-2xl font-bold text-cyan-400 ml-2">€{monthly_total:.2f}</span>
+        </div>
+        <table class="w-full">
+            <thead>
+                <tr class="text-left text-slate-400 text-sm border-b border-slate-600">
+                    <th class="pb-2 px-2">Service</th>
+                    <th class="pb-2 px-2 text-right">Cost</th>
+                    <th class="pb-2 px-2 text-center">Category</th>
+                    <th class="pb-2 px-2"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {"".join(rows)}
+            </tbody>
+        </table>
+    '''
+
+@router.get("/partials/suggestions-box", response_class=HTMLResponse)
+async def partial_suggestions_box(category: str = "subscriptions", session: Session = Depends(get_session)):
+    suggestions = session.exec(
+        select(Suggestion)
+        .where(Suggestion.category == category)
+        .where(Suggestion.dismissed == False)
+        .order_by(Suggestion.priority.desc(), Suggestion.created_at.desc())
+        .limit(5)
+    ).all()
+    
+    if not suggestions:
+        return '''
+            <p class="text-slate-500 text-sm">No suggestions right now.</p>
+            <p class="text-slate-600 text-xs mt-2">Ask Smith to analyze your subscriptions for savings tips!</p>
+        '''
+    
+    items = []
+    for s in suggestions:
+        items.append(f'''
+            <li class="flex items-start gap-2 py-2 border-b border-slate-700 last:border-0">
+                <span class="text-slate-300 text-sm flex-1">{s.content}</span>
+                <button hx-post="/api/suggestions/{s.id}/dismiss" hx-target="#suggestions-box" hx-swap="innerHTML"
+                        class="text-slate-500 hover:text-slate-300 text-xs">✕</button>
+            </li>
+        ''')
+    
+    return f'<ul>{"".join(items)}</ul>'

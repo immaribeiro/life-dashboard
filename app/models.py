@@ -8,6 +8,22 @@ class ReminderStatus(str, Enum):
     DONE = "done"
     DISMISSED = "dismissed"
 
+class BillingCycle(str, Enum):
+    WEEKLY = "weekly"
+    MONTHLY = "monthly"
+    YEARLY = "yearly"
+    LIFETIME = "lifetime"
+
+class SubscriptionCategory(str, Enum):
+    ENTERTAINMENT = "entertainment"
+    PRODUCTIVITY = "productivity"
+    HEALTH = "health"
+    FINANCE = "finance"
+    EDUCATION = "education"
+    CLOUD = "cloud"
+    AI = "ai"
+    OTHER = "other"
+
 class Reminder(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     text: str
@@ -54,3 +70,26 @@ class WeightLog(SQLModel, table=True):
     weight_kg: float
     logged_at: date = Field(default_factory=date.today)
     notes: Optional[str] = None
+
+class Subscription(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    full_price: float  # Full subscription price
+    my_price: Optional[float] = None  # What I actually pay (for shared)
+    billing_cycle: BillingCycle = BillingCycle.MONTHLY
+    category: SubscriptionCategory = SubscriptionCategory.OTHER
+    is_shared: bool = False
+    shared_with: Optional[str] = None  # "Maria, João" or "family"
+    next_billing: Optional[date] = None
+    notes: Optional[str] = None
+    active: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class Suggestion(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    category: str  # "subscriptions", "training", "food", "money", "general"
+    content: str
+    priority: int = 0  # Higher = more important
+    dismissed: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    dismissed_at: Optional[datetime] = None
