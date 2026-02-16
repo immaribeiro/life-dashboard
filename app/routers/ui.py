@@ -148,7 +148,12 @@ async def partial_history(session: Session = Depends(get_session)):
 
 @router.get("/partials/calendar-today", response_class=HTMLResponse)
 async def partial_calendar_today():
-    """Get today's calendar events"""
+    """Get today's calendar events (legacy, redirects to calendar-day)"""
+    return await partial_calendar_day(0)
+
+@router.get("/partials/calendar-day", response_class=HTMLResponse)
+async def partial_calendar_day(offset: int = 0):
+    """Get calendar events for a specific day (0=today, 1=tomorrow, etc.)"""
     try:
         from app.routers.calendar import get_credentials
         from googleapiclient.discovery import build
@@ -159,17 +164,25 @@ async def partial_calendar_today():
             return '<p class="text-slate-500 text-sm">Calendar not connected. <a href="/api/calendar/auth" class="text-cyan-400 hover:underline">Connect Google Calendar</a></p>'
         
         service = build('calendar', 'v3', credentials=creds)
-        today = date.today()
-        tomorrow = today + timedelta(days=1)
+        target_date = date.today() + timedelta(days=offset)
+        next_date = target_date + timedelta(days=1)
         
-        # Get today's events
-        today_start = datetime.combine(today, time.min).isoformat() + 'Z'
-        today_end = datetime.combine(tomorrow, time.min).isoformat() + 'Z'
+        # Date label
+        if offset == 0:
+            date_label = "Today"
+        elif offset == 1:
+            date_label = "Tomorrow"
+        else:
+            date_label = target_date.strftime('%A, %d %b')
+        
+        # Get events for target date
+        day_start = datetime.combine(target_date, time.min).isoformat() + 'Z'
+        day_end = datetime.combine(next_date, time.min).isoformat() + 'Z'
         
         events_result = service.events().list(
             calendarId='primary',
-            timeMin=today_start,
-            timeMax=today_end,
+            timeMin=day_start,
+            timeMax=day_end,
             maxResults=20,
             singleEvents=True,
             orderBy='startTime'
@@ -177,8 +190,10 @@ async def partial_calendar_today():
         
         events = events_result.get('items', [])
         
+        header = f'<p class="text-slate-400 text-xs mb-2">{date_label} — {target_date.strftime("%d/%m/%Y")}</p>'
+        
         if not events:
-            return '<p class="text-slate-500 text-sm">No events scheduled for today ✨</p>'
+            return header + f'<p class="text-slate-500 text-sm">No events scheduled ✨</p>'
         
         rows = []
         for e in events:
@@ -198,14 +213,14 @@ async def partial_calendar_today():
             loc_html = f'<span class="text-slate-500 text-xs ml-2">📍 {location[:30]}</span>' if location else ''
             
             rows.append(f'''
-                <li class="flex items-center gap-3 py-2 border-b border-slate-700">
+                <li class="flex items-center gap-3 py-2 border-b border-slate-700 last:border-0">
                     <span class="text-cyan-400 font-mono text-sm w-14">{time_str}</span>
                     <span class="text-slate-200 text-sm flex-1">{summary}</span>
                     {loc_html}
                 </li>
             ''')
         
-        return f'<ul class="divide-y divide-slate-700">{"".join(rows)}</ul>'
+        return header + f'<ul>{"".join(rows)}</ul>'
         
     except Exception as ex:
         return f'<p class="text-red-400 text-sm">Error loading calendar: {str(ex)[:100]}</p>'

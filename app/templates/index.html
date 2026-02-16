@@ -6,10 +6,20 @@
   <p class="text-slate-400 text-sm mt-1">Your daily overview</p>
 </div>
 
-<!-- Today's Schedule -->
+<!-- Schedule -->
 <div class="card mb-6">
-  <h2 class="text-cyan-400 font-semibold mb-4">📅 Today's Schedule</h2>
-  <div id="calendar-list" hx-get="/partials/calendar-today" hx-trigger="load" hx-swap="innerHTML">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-cyan-400 font-semibold">📅 Schedule</h2>
+    <div class="flex gap-1">
+      <button hx-get="/partials/calendar-day?offset=0" hx-target="#calendar-list" 
+              class="px-3 py-1 text-xs rounded bg-cyan-600 text-white hover:bg-cyan-500" id="btn-today">Today</button>
+      <button hx-get="/partials/calendar-day?offset=1" hx-target="#calendar-list"
+              class="px-3 py-1 text-xs rounded bg-slate-700 text-slate-300 hover:bg-slate-600" id="btn-tomorrow">Tomorrow</button>
+      <button hx-get="/partials/calendar-day?offset=2" hx-target="#calendar-list"
+              class="px-3 py-1 text-xs rounded bg-slate-700 text-slate-300 hover:bg-slate-600" id="btn-day-after">+2 Days</button>
+    </div>
+  </div>
+  <div id="calendar-list" hx-get="/partials/calendar-day?offset=0" hx-trigger="load" hx-swap="innerHTML">
     <p class="text-slate-500 text-sm">Loading calendar...</p>
   </div>
 </div>
