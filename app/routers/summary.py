@@ -4,11 +4,18 @@ from typing import Optional
 from app.database import get_session
 from app.models import DailySummary
 from app.auth import require_api_key
+from datetime import date as date_type
 
 router = APIRouter(prefix="/summary", tags=["summary"])
 
+from datetime import date as date_type
+
 @router.post("", dependencies=[Depends(require_api_key)])
 def upsert_summary(entry: DailySummary, session: Session = Depends(get_session)):
+    # Ensure summary_date is a date object
+    if isinstance(entry.summary_date, str):
+        entry.summary_date = date_type.fromisoformat(entry.summary_date)
+    
     existing = session.exec(select(DailySummary).where(DailySummary.summary_date == entry.summary_date)).first()
     if existing:
         for field in ["highlight", "challenge", "energy_level", "sleep_quality", "gratitude", "tomorrow_focus"]:
