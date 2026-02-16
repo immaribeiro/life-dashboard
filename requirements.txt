@@ -4,3 +4,6 @@ sqlmodel
 jinja2
 python-multipart
 pydantic-settings
+google-api-python-client
+google-auth-oauthlib
+google-auth-httplib2
