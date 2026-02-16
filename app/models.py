@@ -40,7 +40,7 @@ class MentalLog(SQLModel, table=True):
 
 class DailySummary(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    date: date = Field(unique=True)
+    summary_date: date = Field(unique=True)
     highlight: Optional[str] = None
     challenge: Optional[str] = None
     energy_level: Optional[int] = None

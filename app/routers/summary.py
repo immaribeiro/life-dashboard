@@ -9,7 +9,7 @@ router = APIRouter(prefix="/summary", tags=["summary"])
 
 @router.post("", dependencies=[Depends(require_api_key)])
 def upsert_summary(entry: DailySummary, session: Session = Depends(get_session)):
-    existing = session.exec(select(DailySummary).where(DailySummary.date == entry.date)).first()
+    existing = session.exec(select(DailySummary).where(DailySummary.summary_date == entry.summary_date)).first()
     if existing:
         for field in ["highlight", "challenge", "energy_level", "sleep_quality", "gratitude", "tomorrow_focus"]:
             val = getattr(entry, field)
@@ -27,7 +27,7 @@ def upsert_summary(entry: DailySummary, session: Session = Depends(get_session))
 def get_summary(date: str, session: Session = Depends(get_session)):
     from datetime import date as date_type
     d = date_type.fromisoformat(date)
-    entry = session.exec(select(DailySummary).where(DailySummary.date == d)).first()
+    entry = session.exec(select(DailySummary).where(DailySummary.summary_date == d)).first()
     if not entry:
         raise HTTPException(status_code=404, detail="Not found")
     return entry

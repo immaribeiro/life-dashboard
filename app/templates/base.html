@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Life Dashboard{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <style>
+    body { background: #0f172a; color: #e2e8f0; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; }
+  </style>
+</head>
+<body class="min-h-screen font-sans">
+  <nav class="border-b border-slate-700 px-6 py-4 flex items-center gap-6">
+    <span class="text-green-400 font-bold text-lg">🕶️ Life Dashboard</span>
+    <a href="/" class="text-slate-300 hover:text-white text-sm">Today</a>
+    <a href="/reminders" class="text-slate-300 hover:text-white text-sm">Reminders</a>
+    <a href="/history" class="text-slate-300 hover:text-white text-sm">History</a>
+    <a href="/settings" class="text-slate-300 hover:text-white text-sm">Settings</a>
+  </nav>
+  <main class="max-w-5xl mx-auto px-6 py-8">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

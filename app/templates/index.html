@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Today — Life Dashboard{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold text-white" id="today-date"></h1>
+  <p class="text-slate-400 text-sm mt-1">Your daily overview</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+  <!-- Food -->
+  <div class="card">
+    <h2 class="text-green-400 font-semibold mb-4">🍽️ Food</h2>
+    <div id="food-list" hx-get="/partials/food" hx-trigger="load" hx-swap="innerHTML">
+      <p class="text-slate-500 text-sm">Loading...</p>
+    </div>
+    <form hx-post="/partials/food" hx-target="#food-list" hx-swap="innerHTML" class="mt-4 flex gap-2">
+      <input name="description" placeholder="What did you eat?" class="flex-1 bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-green-500">
+      <input name="meal_type" placeholder="Meal" class="w-24 bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-green-500">
+      <button type="submit" class="bg-green-600 hover:bg-green-500 text-white text-sm px-4 py-2 rounded">Add</button>
+    </form>
+  </div>
+
+  <!-- Training -->
+  <div class="card">
+    <h2 class="text-blue-400 font-semibold mb-4">💪 Training</h2>
+    <div id="training-list" hx-get="/partials/training" hx-trigger="load" hx-swap="innerHTML">
+      <p class="text-slate-500 text-sm">Loading...</p>
+    </div>
+    <form hx-post="/partials/training" hx-target="#training-list" hx-swap="innerHTML" class="mt-4 flex gap-2">
+      <input name="activity" placeholder="Activity..." class="flex-1 bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-blue-500">
+      <input name="duration_minutes" placeholder="Min" type="number" class="w-20 bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-blue-500">
+      <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white text-sm px-4 py-2 rounded">Add</button>
+    </form>
+  </div>
+
+  <!-- Mental Notes -->
+  <div class="card">
+    <h2 class="text-purple-400 font-semibold mb-4">🧠 Mental Notes</h2>
+    <div id="mental-list" hx-get="/partials/mental" hx-trigger="load" hx-swap="innerHTML">
+      <p class="text-slate-500 text-sm">Loading...</p>
+    </div>
+    <form hx-post="/partials/mental" hx-target="#mental-list" hx-swap="innerHTML" class="mt-4 flex gap-2">
+      <input name="content" placeholder="What's on your mind?" class="flex-1 bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-purple-500">
+      <button type="submit" class="bg-purple-600 hover:bg-purple-500 text-white text-sm px-4 py-2 rounded">Add</button>
+    </form>
+  </div>
+
+  <!-- Reminders -->
+  <div class="card">
+    <h2 class="text-yellow-400 font-semibold mb-4">⏰ Reminders</h2>
+    <div id="reminder-list" hx-get="/partials/reminders" hx-trigger="load" hx-swap="innerHTML">
+      <p class="text-slate-500 text-sm">Loading...</p>
+    </div>
+    <form hx-post="/partials/reminders" hx-target="#reminder-list" hx-swap="innerHTML" class="mt-4 flex gap-2">
+      <input name="text" placeholder="Reminder..." class="flex-1 bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-yellow-500">
+      <button type="submit" class="bg-yellow-600 hover:bg-yellow-500 text-white text-sm px-4 py-2 rounded">Add</button>
+    </form>
+  </div>
+
+</div>
+<script>
+  document.getElementById('today-date').textContent = new Date().toLocaleDateString('en-GB', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+</script>
+{% endblock %}
